@@ -1,11 +1,10 @@
 #include "timer.h"
-#include "std.h"
 
-Timer::Timer(bool _start)
-: started(false),
-period(0UL),
-startTick(0UL),
-prevElapsedTime(0LL)
+Timer::Timer(bool _start):
+	startTick(0UL),	
+	prevElapsedTime(0LL),
+	period(0UL),
+	started(false)
 {
 	startTime.QuadPart = 0LL;
 	clockFrequency.QuadPart = 0LL;
@@ -26,6 +25,11 @@ void Timer::SetPeriod(ULONG _period)
 	period = _period;
 }
 
+ULONG Timer::GetPeriod()
+{
+	return period;
+}
+
 void Timer::Start()
 {
 	started = true;
@@ -43,35 +47,33 @@ ULONG Timer::GetUSec(bool _reset)
 	LONGLONG elapsedTime = currentTime.QuadPart - startTime.QuadPart;
 
 	// Compute the number of millisecond ticks elapsed.
-	unsigned long msecTicks = (unsigned long)(1000 * elapsedTime / clockFrequency.QuadPart);
+	unsigned long msTicks = (unsigned long)(1000 * elapsedTime / clockFrequency.QuadPart);
 
 	// Check for unexpected leaps in the Win32 performance counter.  
 	// (This is caused by unexpected data across the PCI to ISA 
 	// bridge, aka south bridge.  See Microsoft KB274323.)
 	unsigned long elapsedTicks = GetTickCount() - startTick;
-	signed long msecOff = (signed long)(msecTicks - elapsedTicks);
-	if (msecOff < -100 || msecOff > 100)
+	signed long msOff = (signed long)(msTicks - elapsedTicks);
+	if (msOff < -100 || msOff > 100)
 	{
 		// Adjust the starting time forwards.
-		LONGLONG msecAdjustment = tmin(msecOff * clockFrequency.QuadPart / 1000,
-			                           elapsedTime - prevElapsedTime);
-		startTime.QuadPart += msecAdjustment;
-		elapsedTime -= msecAdjustment;
+		LONGLONG msAdjustment = tmin(msOff * clockFrequency.QuadPart / 1000, elapsedTime - prevElapsedTime);
+		startTime.QuadPart += msAdjustment;
+		elapsedTime -= msAdjustment;
 	}
 
 	// Store the current elapsed time for adjustments next time.
 	prevElapsedTime = elapsedTime;
 
 	// Convert to microseconds.
-	unsigned long usecTicks = (unsigned long)(1000000 * elapsedTime / 
-		clockFrequency.QuadPart);
+	unsigned long usTicks = (unsigned long)(1000000 * elapsedTime / clockFrequency.QuadPart);
 
 	if (_reset)
 	{
-		Reset(started); // save started state
+		Reset(started);
 	}
 
-	return usecTicks;
+	return usTicks;
 }
 
 ULONG Timer::GetMSec(bool _reset)
