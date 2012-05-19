@@ -17,9 +17,28 @@
 	#include <windows.h>
 	#include <time.h>
 #else // WIN32
+    #include <sys/time.h>
 #endif // WIN32
 
 #define tmin(a,b) (a > b ? a : b)
+#ifndef ULONG
+    #define ULONG unsigned long
+#endif
+
+#if defined(WIN32) || defined(_WIN32)
+struct TimerData
+{
+    LARGE_INTEGER clockFrequency;
+    DWORD startTick;
+    LONGLONG prevElapsedTime;
+    LARGE_INTEGER startTime;
+};
+#else
+struct TimerData
+{
+    timeval startTime;
+};
+#endif
 
 /*!
 	\brief Timer with microsecond resolution.
@@ -29,10 +48,7 @@
 class Timer
 {
     private:
-        LARGE_INTEGER clockFrequency;
-        DWORD startTick;
-        LONGLONG prevElapsedTime;
-        LARGE_INTEGER startTime;
+        TimerData data;
         ULONG period;
         bool started;
     public:
